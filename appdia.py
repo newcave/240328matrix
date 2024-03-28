@@ -1,37 +1,55 @@
 import streamlit as st
 import numpy as np
-from scipy.linalg import solve_banded
 
-# Streamlit interface for input
-st.title('Solve Banded Matrix System')
+st.title('Tridiagonal Matrix Solver')
 
-# Input fields for diagonals and RHS vector
-st.subheader('Enter the diagonals of the matrix')
-lower_diag = st.text_input('Lower diagonal (comma-separated values)', '1, 1')
-main_diag = st.text_input('Main diagonal (comma-separated values)', '3, -1, 1')
-upper_diag = st.text_input('Upper diagonal (comma-separated values)', '1, 3')
-rhs_vector = st.text_input('Right-hand side vector (comma-separated values)', '1, 6, 1')
+# Input fields for the diagonals and the solution vector
+st.subheader('Enter the diagonals and the solution vector')
+b_input = st.text_input('Main Diagonal (comma-separated, e.g. "5, 6, 6, 6, 6, 6, 6, 6, 5")', '5, 6, 6, 6, 6, 6, 6, 6, 5')
+a_input = st.text_input('Lower Diagonal (comma-separated, starts with 0)', '0, 1, 1, 1, 1, 1, 1, 1, 1')
+c_input = st.text_input('Upper Diagonal (comma-separated, ends with 0)', '1, 1, 1, 1, 1, 1, 1, 1, 0')
+d_input = st.text_input('Solution Vector (comma-separated)', '3, 2, 1, 3, 1, 3, 1, 2, 3')
 
 # Convert input strings to numpy arrays
-try:
-    lower_diag = np.fromstring(lower_diag, dtype=np.float64, sep=',')
-    main_diag = np.fromstring(main_diag, dtype=np.float64, sep=',')
-    upper_diag = np.fromstring(upper_diag, dtype=np.float64, sep=',')
-    rhs_vector = np.fromstring(rhs_vector, dtype=np.float64, sep=',')
+b = np.fromstring(b_input, sep=',', dtype=float)
+a = np.fromstring(a_input, sep=',', dtype=float)
+c = np.fromstring(c_input, sep=',', dtype=float)
+d = np.fromstring(d_input, sep=',', dtype=float)
 
-    # Check if dimensions match
-    if len(main_diag) - 1 == len(lower_diag) == len(upper_diag) and len(main_diag) == len(rhs_vector):
-        # Arrange the matrix in the required format for solve_banded
-        ab = np.vstack((np.append(0, upper_diag), main_diag, np.append(lower_diag, 0)))
-        
-        # Solve the system
-        solution = solve_banded((1, 1), ab, rhs_vector)
-        
-        # Display the solution
-        st.subheader('Solution')
-        st.write(solution)
-    else:
-        st.error('The lengths of the diagonals or the RHS vector do not match the expected sizes.')
-except ValueError as e:
-    st.error(f'Input error: {e}')
+# Perform the computation only if the input lengths are valid
+if len(b) == len(a) == len(c) == len(d):
+    n = len(d)
+    newC = np.zeros(n, dtype=float)
+    newD = np.zeros(n, dtype=float)
+    x = np.zeros(n, dtype=float)
 
+    # The first coefficients
+    newC[0] = c[0] / b[0]
+    newD[0] = d[0] / b[0]
+
+    # Forward sweep for newC and newD
+    for i in range(1, n):
+        newC[i] = c[i] / (b[i] - a[i] * newC[i - 1])
+        newD[i] = (d[i] - a[i] * newD[i - 1]) / (b[i] - a[i] * newC[i - 1])
+
+    # Backward substitution for solution x
+    x[n - 1] = newD[n - 1]
+    for i in reversed(range(0, n - 1)):
+        x[i] = newD[i] - newC[i] * x[i + 1]
+
+    # Using np.linalg.solve for comparison
+    mat = np.zeros((n, n))
+    for i in range(n):
+        mat[i, i] = b[i]
+        if i < n - 1:
+            mat[i, i + 1] = c[i + 1]
+            mat[i + 1, i] = a[i]
+    sol = np.linalg.solve(mat, d)
+
+    # Display results
+    st.subheader('Computed Solution')
+    st.write(x)
+    st.subheader('NumPy Solution for Comparison')
+    st.write(sol)
+else:
+    st.error('The lengths of the diagonals or the solution vector do not match the expected sizes. Please ensure all inputs have correct lengths.')
