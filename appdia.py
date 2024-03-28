@@ -55,7 +55,7 @@ if len(b) == len(a) == len(c) == len(d):
     st.subheader('Computed Solution')
     st.write(x)
     
-    st.subheader('NumPy Solution for Comparison')
-    st.write(sol)
+#    st.subheader('NumPy Solution for Comparison')
+#    st.write(sol)
 else:
     st.error('The lengths of the diagonals or the solution vector do not match the expected sizes. Please ensure all inputs have correct lengths.')
