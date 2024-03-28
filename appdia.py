@@ -16,39 +16,45 @@ a = np.fromstring(a_input, sep=',', dtype=float)
 c = np.fromstring(c_input, sep=',', dtype=float)
 d = np.fromstring(d_input, sep=',', dtype=float)
 
-# Perform the computation only if the input lengths are valid
 if len(b) == len(a) == len(c) == len(d):
     n = len(d)
+    # Create the matrix A from diagonals
+    A = np.zeros((n, n))
+    for i in range(n):
+        A[i, i] = b[i]
+        if i < n - 1:
+            A[i, i + 1] = c[i + 1]
+            A[i + 1, i] = a[i]
+
+    # Display the matrix A and vector B
+    st.subheader('Matrix A (constructed from input diagonals)')
+    st.write(A)
+
+    st.subheader('Vector B (Solution Vector)')
+    st.write(d)
+
+    # Solve the system using the provided algorithm
     newC = np.zeros(n, dtype=float)
     newD = np.zeros(n, dtype=float)
     x = np.zeros(n, dtype=float)
 
-    # The first coefficients
     newC[0] = c[0] / b[0]
     newD[0] = d[0] / b[0]
-
-    # Forward sweep for newC and newD
     for i in range(1, n):
         newC[i] = c[i] / (b[i] - a[i] * newC[i - 1])
         newD[i] = (d[i] - a[i] * newD[i - 1]) / (b[i] - a[i] * newC[i - 1])
 
-    # Backward substitution for solution x
     x[n - 1] = newD[n - 1]
-    for i in reversed(range(0, n - 1)):
+    for i in reversed(range(n - 1)):
         x[i] = newD[i] - newC[i] * x[i + 1]
 
-    # Using np.linalg.solve for comparison
-    mat = np.zeros((n, n))
-    for i in range(n):
-        mat[i, i] = b[i]
-        if i < n - 1:
-            mat[i, i + 1] = c[i + 1]
-            mat[i + 1, i] = a[i]
-    sol = np.linalg.solve(mat, d)
+    # Solve using np.linalg.solve for comparison
+    sol = np.linalg.solve(A, d)
 
-    # Display results
+    # Display the computed solution and comparison
     st.subheader('Computed Solution')
     st.write(x)
+    
     st.subheader('NumPy Solution for Comparison')
     st.write(sol)
 else:
